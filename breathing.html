@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дыхательные практики</title>
+<style>
+  :root {
+    --bg: #0b1016;
+    --bg2: #121b25;
+    --fg: #e8f0f7;
+    --muted: #7d92a6;
+    --accent: #4fd1c5;
+    --accent2: #63a4ff;
+    --line: #22303d;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(120% 90% at 50% 0%, #16222f 0%, var(--bg) 60%);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    padding: 20px 16px 32px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 4px 0 18px;
+  }
+
+  /* ---------- сцена ---------- */
+  .stage {
+    position: relative;
+    width: min(64vw, 46vh, 340px);
+    height: min(64vw, 46vh, 340px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0 4px;
+    flex: none;
+  }
+  .ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px dashed var(--line);
+  }
+  .circle {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, rgba(99,164,255,.55), rgba(79,209,197,.18) 60%, rgba(79,209,197,0) 72%);
+    border: 1px solid rgba(79,209,197,.45);
+    box-shadow: 0 0 60px rgba(79,209,197,.18);
+    transform: scale(.5);
+    will-change: transform;
+  }
+  .readout {
+    position: relative;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .phase {
+    font-size: 20px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+    min-height: 24px;
+  }
+  .count {
+    font-size: clamp(44px, 13vw, 76px);
+    font-weight: 200;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stats {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 14px 0 18px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    min-height: 20px;
+  }
+
+  /* ---------- темп ---------- */
+  .tempo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .tempo button {
+    width: 44px;
+    padding: 8px 0;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .tempoInfo {
+    min-width: 150px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .tempoInfo #tempoValue { display: block; font-size: 17px; }
+  .tempoInfo #tempoPhases { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- кнопки ---------- */
+  .controls { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; justify-content: center; }
+  button {
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 22px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .35; cursor: default; }
+  button.primary { background: linear-gradient(180deg, #1c6f6a, #14534f); border-color: #2a8f88; }
+
+  /* ---------- панель ---------- */
+  .panel {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(18,27,37,.6);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    transition: opacity .25s;
+  }
+  .panel.hidden { display: none; }
+  fieldset { border: 0; margin: 0 0 16px; padding: 0; }
+  legend, .label {
+    font-size: 12px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 9px;
+    padding: 0;
+  }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .presets button { padding: 8px 14px; font-size: 14px; }
+  .presets button.active { border-color: var(--accent); color: var(--accent); }
+
+  .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .phases label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+  input[type=number] {
+    font: inherit;
+    width: 100%;
+    background: #0d151d;
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 8px;
+    text-align: center;
+  }
+  input[type=number]:focus, select:focus { outline: none; border-color: var(--accent); }
+  select {
+    font: inherit;
+    background: #0d151d;
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 8px;
+  }
+  .limit { display: flex; gap: 8px; align-items: center; }
+  .limit select { flex: 1; }
+  .limit input { width: 90px; }
+  .sound { display: flex; gap: 14px; align-items: center; }
+  .sound input[type=range] { flex: 1; accent-color: var(--accent); }
+  .sound label { display: flex; gap: 7px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 14px; text-align: center; }
+
+  @media (max-width: 420px) {
+    .phases { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Дыхание</h1>
+
+<div class="stage">
+  <div class="ring"></div>
+  <div class="circle" id="circle"></div>
+  <div class="readout">
+    <div class="phase" id="phaseName">Готово</div>
+    <div class="count" id="countdown">—</div>
+  </div>
+</div>
+
+<div class="stats" id="stats">Настройте фазы и нажмите «Старт»</div>
+
+<div class="tempo">
+  <button id="slowerBtn" title="Дышать медленнее">−</button>
+  <div class="tempoInfo">
+    <span id="tempoValue">×1.00</span>
+    <span id="tempoPhases">4.0 / 4.0 / 4.0 / 4.0 с</span>
+  </div>
+  <button id="fasterBtn" title="Дышать быстрее">+</button>
+</div>
+
+<div class="controls">
+  <button id="startBtn" class="primary">Старт</button>
+  <button id="pauseBtn" disabled>Пауза</button>
+  <button id="stopBtn" disabled>Стоп</button>
+</div>
+
+<div class="panel" id="panel">
+  <fieldset>
+    <legend>Пресет</legend>
+    <div class="presets" id="presets">
+      <button data-p="4,4,4,4">Бокс 4-4-4-4</button>
+      <button data-p="4,7,8,0">4-7-8</button>
+      <button data-p="5,0,5,0">Когерентное 5-5</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Фазы, секунды</legend>
+    <div class="phases">
+      <label>Вдох <input type="number" id="inhale" min="0" max="60" step="0.5" value="4"></label>
+      <label>Задержка <input type="number" id="hold1" min="0" max="60" step="0.5" value="4"></label>
+      <label>Выдох <input type="number" id="exhale" min="0" max="60" step="0.5" value="4"></label>
+      <label>Задержка <input type="number" id="hold2" min="0" max="60" step="0.5" value="4"></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Длительность сессии</legend>
+    <div class="limit">
+      <select id="limitMode">
+        <option value="none">Без лимита</option>
+        <option value="minutes">По минутам</option>
+        <option value="cycles">По циклам</option>
+      </select>
+      <input type="number" id="limitValue" min="1" max="120" step="1" value="5" disabled>
+    </div>
+  </fieldset>
+
+  <fieldset style="margin-bottom:0">
+    <legend>Звук</legend>
+    <div class="limit" style="margin-bottom:12px">
+      <select id="soundTheme">
+        <option value="pad">Пэд: тёплый</option>
+        <option value="padMinor">Пэд: мягкий</option>
+        <option value="padGlass">Пэд: стеклянный</option>
+        <option value="padDeep">Пэд: глубокий</option>
+        <option value="padDrone">Пэд: дрон</option>
+        <option value="bowl">Поющая чаша</option>
+        <option value="choir">Хор</option>
+        <option value="flute">Флейта</option>
+        <option value="marimba">Маримба</option>
+        <option value="hang">Ханг</option>
+        <option value="musicBox">Музыкальная шкатулка</option>
+        <option value="chime">Колокольчики</option>
+        <option value="silent">Тишина</option>
+      </select>
+      <button type="button" id="previewBtn">Проба</button>
+    </div>
+    <div class="sound">
+      <label><input type="checkbox" id="soundOn" checked> вкл</label>
+      <input type="range" id="volume" min="0" max="100" step="1" value="45">
+    </div>
+  </fieldset>
+
+  <div class="hint">Пробел — пауза / продолжить &nbsp;·&nbsp; Esc — стоп &nbsp;·&nbsp; ↑ / ↓ — темп</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Настройки
+  // ------------------------------------------------------------------
+  var STORE_KEY = 'breathing.settings';
+  var DEFAULTS = {
+    inhale: 4, hold1: 4, exhale: 4, hold2: 4,
+    limitMode: 'none', limitValue: 5,
+    soundOn: true, volume: 45, soundTheme: 'pad', rate: 1
+  };
+  var RATE_MIN = 0.5, RATE_MAX = 2.5, RATE_STEP = 0.05;
+
+  var el = {
+    circle: document.getElementById('circle'),
+    phaseName: document.getElementById('phaseName'),
+    countdown: document.getElementById('countdown'),
+    stats: document.getElementById('stats'),
+    panel: document.getElementById('panel'),
+    presets: document.getElementById('presets'),
+    inhale: document.getElementById('inhale'),
+    hold1: document.getElementById('hold1'),
+    exhale: document.getElementById('exhale'),
+    hold2: document.getElementById('hold2'),
+    limitMode: document.getElementById('limitMode'),
+    limitValue: document.getElementById('limitValue'),
+    soundOn: document.getElementById('soundOn'),
+    volume: document.getElementById('volume'),
+    soundTheme: document.getElementById('soundTheme'),
+    previewBtn: document.getElementById('previewBtn'),
+    slowerBtn: document.getElementById('slowerBtn'),
+    fasterBtn: document.getElementById('fasterBtn'),
+    tempoValue: document.getElementById('tempoValue'),
+    tempoPhases: document.getElementById('tempoPhases'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    stopBtn: document.getElementById('stopBtn')
+  };
+
+  function readSettings() {
+    return {
+      inhale: num(el.inhale.value, 0, 60),
+      hold1: num(el.hold1.value, 0, 60),
+      exhale: num(el.exhale.value, 0, 60),
+      hold2: num(el.hold2.value, 0, 60),
+      limitMode: el.limitMode.value,
+      limitValue: num(el.limitValue.value, 1, 120),
+      soundOn: el.soundOn.checked,
+      volume: num(el.volume.value, 0, 100),
+      soundTheme: el.soundTheme.value,
+      rate: state.rate
+    };
+  }
+
+  function num(v, min, max) {
+    var n = parseFloat(v);
+    if (!isFinite(n)) n = min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function applySettings(s) {
+    el.inhale.value = s.inhale;
+    el.hold1.value = s.hold1;
+    el.exhale.value = s.exhale;
+    el.hold2.value = s.hold2;
+    el.limitMode.value = s.limitMode;
+    el.limitValue.value = s.limitValue;
+    el.soundOn.checked = s.soundOn;
+    el.volume.value = s.volume;
+    el.soundTheme.value = s.soundTheme;
+    // Сохранённый тембр мог исчезнуть из списка — откатываемся на тёплый пэд.
+    if (!el.soundTheme.value) el.soundTheme.value = DEFAULTS.soundTheme;
+    state.rate = num(s.rate, RATE_MIN, RATE_MAX);
+    syncLimitInput();
+    markActivePreset();
+    updateTempoUI();
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(readSettings()));
+    } catch (e) { /* приватный режим — просто не сохраняем */ }
+  }
+
+  function loadSettings() {
+    var s = DEFAULTS;
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        s = {};
+        for (var k in DEFAULTS) {
+          s[k] = (parsed && parsed[k] !== undefined) ? parsed[k] : DEFAULTS[k];
+        }
+      }
+    } catch (e) { s = DEFAULTS; }
+    applySettings(s);
+  }
+
+  function syncLimitInput() {
+    el.limitValue.disabled = (el.limitMode.value === 'none');
+  }
+
+  function markActivePreset() {
+    var cur = [el.inhale.value, el.hold1.value, el.exhale.value, el.hold2.value]
+      .map(function (v) { return parseFloat(v) || 0; }).join(',');
+    var btns = el.presets.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].dataset.p === cur);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Аудио
+  // ------------------------------------------------------------------
+  var ctx = null, master = null, voice = null;
+
+  function initAudio() {
+    if (ctx) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = masterLevel();
+    master.connect(ctx.destination);
+  }
+
+  function masterLevel() {
+    var s = readSettings();
+    return s.soundOn ? (s.volume / 100) * 0.5 : 0;
+  }
+
+  function updateVolume() {
+    if (master) master.gain.setTargetAtTime(masterLevel(), ctx.currentTime, 0.02);
+  }
+
+  function resumeAudio() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  // Колоколообразная огибающая: тихо → полно → тихо, без щелчков на краях.
+  function bell(param, peak, t0, duration) {
+    var fade = Math.min(0.6, duration * 0.35);
+    param.setValueAtTime(0.0001, t0);
+    param.exponentialRampToValueAtTime(peak, t0 + fade);
+    param.setValueAtTime(peak, t0 + Math.max(fade, duration - fade));
+    param.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  }
+
+  // Семейство пэдов: аккорд на вдохе / аккорд на выдохе, регистр и характер
+  // задаются волной, расстройкой и диапазоном фильтра.
+  var PADS = {
+    pad: { // A-dur → G-dur, средний регистр, тёплый
+      wave: 'triangle', detune: 4, level: 0.28, peak: 0.85,
+      up: [220.00, 277.18, 329.63], down: [196.00, 246.94, 293.66],
+      fLo: 420, fHi: 1200, hold: 392
+    },
+    padMinor: { // вдох на A-moll, выдох разрешается в C-dur — мягко, но не грустно
+      wave: 'triangle', detune: 5, level: 0.26, peak: 0.85,
+      up: [220.00, 261.63, 329.63], down: [196.00, 261.63, 329.63],
+      fLo: 400, fHi: 1100, hold: 261.63
+    },
+    padGlass: { // октавой выше, чистые синусы — прозрачный «стеклянный» звук
+      wave: 'sine', detune: 5, level: 0.30, peak: 0.8, q: 0.4,
+      up: [440.00, 554.37, 659.25], down: [392.00, 493.88, 587.33],
+      fLo: 700, fHi: 1700, hold: 587.33
+    },
+    padDeep: { // низкий фисгармонический гул, пила под тяжёлым фильтром
+      wave: 'sawtooth', detune: 3, level: 0.16, peak: 0.9, q: 0.8, sub: 0.20,
+      up: [110.00, 164.81, 220.00], down: [98.00, 146.83, 196.00],
+      fLo: 190, fHi: 620, hold: 220
+    },
+    padDrone: { // тоника держится, движется только верхний голос — восточный дрон
+      wave: 'triangle', detune: 6, level: 0.22, peak: 0.85, sub: 0.12,
+      up: [146.83, 220.00, 349.23], down: [146.83, 220.00, 293.66],
+      fLo: 320, fHi: 1000, hold: 293.66
+    },
+    bowl: { // поющая чаша: негармоничные обертоны и биения от широкой расстройки
+      wave: 'sine', detune: 9, level: 0.34, peak: 0.85, q: 0.4,
+      partials: [[1, 1], [2.76, 0.30], [5.40, 0.10]],
+      up: [261.63], down: [196.00],
+      fLo: 600, fHi: 2200, hold: 261.63
+    },
+    choir: { // пила через форманты гласной «а» — тёплый хор без слов
+      wave: 'sawtooth', detune: 8, level: 0.10, peak: 1.6, q: 0.6,
+      formants: [[700, 1.0, 7], [1220, 0.55, 9], [2600, 0.18, 11]],
+      vibrato: [4.8, 7],
+      up: [220.00, 277.18, 329.63], down: [196.00, 246.94, 293.66],
+      fLo: 800, fHi: 2600, hold: 293.66
+    },
+    flute: { // одна нота с мягкой атакой и вибрато — дыхание флейты
+      wave: 'triangle', detune: 3, level: 0.40, peak: 0.9, q: 0.4,
+      partials: [[1, 1], [2, 0.10], [3, 0.04]],
+      vibrato: [5.2, 9],
+      up: [440.00], down: [329.63],
+      fLo: 700, fHi: 2000, hold: 392
+    }
+  };
+
+  // Пентатоника до-мажор — из неё строятся мелодические тембры.
+  var SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+  // Щипковые/ударные тембры: арпеджио по пентатонике, вверх на вдохе и вниз
+  // на выдохе. Характер задаётся набором обертонов, октавой и затуханием.
+  var PLUCKS = {
+    marimba: { // дерево: сильная 4-я гармоника, короткий сухой удар
+      partials: [[1, 1], [4.01, 0.28], [9.2, 0.06]],
+      octave: 1, decay: 1.8, level: 0.42, attack: 0.008, pace: 1.1, hold: 523.25
+    },
+    hang: { // ханг: металл с богатыми обертонами и долгим гулом, октавой ниже
+      partials: [[1, 1], [2.0, 0.42], [3.02, 0.26], [4.95, 0.10]],
+      octave: 0.5, decay: 3.4, level: 0.34, attack: 0.022, pace: 1.5, hold: 261.63
+    },
+    musicBox: { // музыкальная шкатулка: высоко, звонко, быстро гаснет
+      partials: [[1, 1], [2.0, 0.32], [5.4, 0.10]],
+      octave: 2, decay: 1.1, level: 0.24, attack: 0.004, pace: 0.85, hold: 1046.50
+    }
+  };
+
+  // Одна нота щипкового тембра. Подключается в переданный узел, время абсолютное.
+  function pluckNote(dest, cfg, freq, t0, dur, level) {
+    cfg.partials.forEach(function (p) {
+      var o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq * p[0], t0);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(level * p[1], t0 + cfg.attack);
+      // обертоны гаснут быстрее основного тона — так звук «оседает»
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur * (p[0] > 1 ? 0.45 : 1));
+      o.connect(g); g.connect(dest);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+      if (voice) voice.srcs.push(o); // маркер задержки звучит вне фазового голоса
+    });
+  }
+
+  // Основной звук фазы вдоха/выдоха, длиной ровно в фазу.
+  function playBreath(rising, duration) {
+    stopVoice();
+    var theme = readSettings().soundTheme;
+    if (!ctx || duration <= 0.05 || theme === 'silent') return;
+
+    if (theme === 'chime') { playChime(rising ? 523.25 : 392.00, 1.6); return; }
+
+    var t0 = ctx.currentTime;
+    var g = ctx.createGain();
+    g.connect(master);
+    voice = { gain: g, srcs: [] };
+
+    var pluck = PLUCKS[theme];
+    if (pluck) {
+      var n = Math.max(2, Math.min(6, Math.round(duration / pluck.pace)));
+      var step = duration / n;
+      for (var i = 0; i < n; i++) {
+        var idx = rising ? i : (n - 1 - i);
+        var f = SCALE[Math.min(SCALE.length - 1, idx + (rising ? 0 : 1))] * pluck.octave;
+        pluckNote(g, pluck, f, t0 + i * step, Math.min(pluck.decay, step * 2), pluck.level);
+      }
+      g.gain.setValueAtTime(1, t0);
+      return;
+    }
+
+    var pad = PADS[theme];
+    if (pad) {
+      // Аккорд, набегающий и отпускающий вместе с дыханием: на вдохе фильтр
+      // открывается (звук светлеет), на выдохе закрывается.
+      var chord = rising ? pad.up : pad.down;
+      var lpf = ctx.createBiquadFilter();
+      lpf.type = 'lowpass';
+      lpf.Q.setValueAtTime(pad.q || 0.5, t0);
+      lpf.frequency.setValueAtTime(rising ? pad.fLo : pad.fHi, t0);
+      lpf.frequency.exponentialRampToValueAtTime(rising ? pad.fHi : pad.fLo, t0 + duration);
+
+      if (pad.formants) {
+        // Параллельные резонансы на частотах гласной — из пилы получается голос.
+        pad.formants.forEach(function (fm) {
+          var bp = ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(fm[0], t0);
+          bp.Q.setValueAtTime(fm[2] || 6, t0);
+          var fg = ctx.createGain();
+          fg.gain.value = fm[1];
+          lpf.connect(bp); bp.connect(fg); fg.connect(g);
+        });
+      } else {
+        lpf.connect(g);
+      }
+
+      // Общее вибрато: один LFO подмешивается в расстройку всех голосов.
+      var lfo = null, lfoGain = null;
+      if (pad.vibrato) {
+        lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(pad.vibrato[0], t0);
+        lfoGain = ctx.createGain();
+        lfoGain.gain.setValueAtTime(0, t0);
+        lfoGain.gain.linearRampToValueAtTime(pad.vibrato[1], t0 + Math.min(1.5, duration * 0.5));
+        lfo.connect(lfoGain);
+        lfo.start(t0);
+        lfo.stop(t0 + duration + 0.15);
+        voice.srcs.push(lfo);
+      }
+
+      chord.forEach(function (f, i) {
+        [-pad.detune, pad.detune].forEach(function (cents) {
+          (pad.partials || [[1, 1]]).forEach(function (p) {
+            var o = ctx.createOscillator();
+            o.type = pad.wave;
+            o.frequency.setValueAtTime(f * p[0] * Math.pow(2, cents / 1200), t0);
+            if (lfoGain) lfoGain.connect(o.detune);
+            var og = ctx.createGain();
+            og.gain.value = pad.level * p[1] / (i + 1);
+            o.connect(og); og.connect(lpf);
+            o.start(t0);
+            o.stop(t0 + duration + 0.15);
+            voice.srcs.push(o);
+          });
+        });
+      });
+
+      if (pad.sub) { // октава снизу синусом — придаёт тембру опору
+        var s = ctx.createOscillator();
+        s.type = 'sine';
+        s.frequency.setValueAtTime(chord[0] / 2, t0);
+        var sg = ctx.createGain();
+        sg.gain.value = pad.sub;
+        s.connect(sg); sg.connect(g);
+        s.start(t0);
+        s.stop(t0 + duration + 0.15);
+        voice.srcs.push(s);
+      }
+
+      bell(g.gain, pad.peak || 0.85, t0, duration);
+      return;
+    }
+
+    voice = null; // неизвестный тембр — молчим, звук не собран
+  }
+
+  function stopVoice() {
+    if (!voice || !ctx) return;
+    var t = ctx.currentTime;
+    try {
+      voice.gain.gain.cancelScheduledValues(t);
+      voice.gain.gain.setValueAtTime(Math.max(0.0001, voice.gain.gain.value), t);
+      voice.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+      voice.srcs.forEach(function (s) {
+        try { s.stop(t + 0.1); } catch (e) { /* уже остановлен */ }
+      });
+    } catch (e) { /* узел уже освобождён */ }
+    voice = null;
+  }
+
+  // Мягкий колокольчик с длинным затуханием.
+  function playChime(freq, dur, delay) {
+    if (!ctx || readSettings().soundTheme === 'silent') return;
+    var t0 = ctx.currentTime + (delay || 0);
+    var g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.55, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    g.connect(master);
+    [[1, 1], [2.01, 0.35], [3.02, 0.14]].forEach(function (p) {
+      var o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq * p[0], t0);
+      var pg = ctx.createGain();
+      pg.gain.value = p[1];
+      o.connect(pg); pg.connect(g);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    });
+  }
+
+  // Маркер начала задержки — свой для каждого тембра.
+  function playHoldCue() {
+    var theme = readSettings().soundTheme;
+    if (!ctx || theme === 'silent') return;
+    if (theme === 'chime') playChime(659.25, 1.2);
+    else if (PLUCKS[theme]) {
+      var p = PLUCKS[theme];
+      pluckNote(master, p, p.hold, ctx.currentTime, p.decay * 0.7, p.level * 0.7);
+    }
+    else if (PADS[theme]) playChime(PADS[theme].hold, 0.9);
+  }
+
+  // ------------------------------------------------------------------
+  // Цикл
+  // ------------------------------------------------------------------
+  var PHASES = [
+    { key: 'inhale', name: 'Вдох',      from: 0.5, to: 1.0 },
+    { key: 'hold1',  name: 'Задержка',  from: 1.0, to: 1.0 },
+    { key: 'exhale', name: 'Выдох',     from: 1.0, to: 0.5 },
+    { key: 'hold2',  name: 'Задержка',  from: 0.5, to: 0.5 }
+  ];
+
+  var state = {
+    running: false,
+    paused: false,
+    plan: null,          // длительности фаз, зафиксированные на старте
+    phaseIndex: 0,
+    phaseStart: 0,       // performance.now() начала текущей фазы
+    sessionStart: 0,
+    elapsedBefore: 0,    // накопленное время сессии до текущей паузы
+    cycles: 0,
+    rafId: 0,
+    rate: 1              // множитель длительности фаз, меняется прямо во время сессии
+  };
+
+  // Длительность фазы с учётом темпа. Базовый план фиксируется на старте,
+  // а темп применяется поверх него — поэтому его можно крутить на ходу.
+  function phaseDur(i) {
+    var base = state.plan ? state.plan[i] : 0;
+    return base * state.rate;
+  }
+
+  // Звук текущей фазы; duration — сколько её осталось проиграть.
+  function playPhaseAudio(duration) {
+    var key = PHASES[state.phaseIndex].key;
+    if (key === 'inhale') playBreath(true, duration);
+    else if (key === 'exhale') playBreath(false, duration);
+    else { stopVoice(); playHoldCue(); }
+  }
+
+  function updateTempoUI() {
+    el.tempoValue.textContent = '×' + state.rate.toFixed(2);
+    var base = state.plan || [
+      num(el.inhale.value, 0, 60), num(el.hold1.value, 0, 60),
+      num(el.exhale.value, 0, 60), num(el.hold2.value, 0, 60)
+    ];
+    el.tempoPhases.textContent = base.map(function (v) {
+      return (v * state.rate).toFixed(1);
+    }).join(' / ') + ' с';
+    el.slowerBtn.disabled = state.rate >= RATE_MAX - 1e-6;
+    el.fasterBtn.disabled = state.rate <= RATE_MIN + 1e-6;
+  }
+
+  // Меняет темп, сохраняя пройденную долю текущей фазы: круг не прыгает,
+  // звук переигрывается на новый остаток фазы.
+  function changeRate(delta) {
+    var next = num((state.rate + delta).toFixed(2), RATE_MIN, RATE_MAX);
+    if (next === state.rate) return;
+
+    if (state.running && !state.paused) {
+      var now = performance.now();
+      var oldDur = phaseDur(state.phaseIndex);
+      var frac = oldDur > 0 ? Math.min(1, (now - state.phaseStart) / 1000 / oldDur) : 1;
+      state.rate = next;
+      var newDur = phaseDur(state.phaseIndex);
+      state.phaseStart = now - frac * newDur * 1000;
+      playPhaseAudio(Math.max(0.05, newDur * (1 - frac)));
+    } else if (state.running && state.paused) {
+      var oldD = phaseDur(state.phaseIndex);
+      var f = oldD > 0 ? Math.min(1, (state.pausedPhaseElapsed || 0) / 1000 / oldD) : 1;
+      state.rate = next;
+      state.pausedPhaseElapsed = f * phaseDur(state.phaseIndex) * 1000;
+    } else {
+      state.rate = next;
+    }
+
+    updateTempoUI();
+    saveSettings();
+  }
+
+  function planFromSettings() {
+    var s = readSettings();
+    var p = [s.inhale, s.hold1, s.exhale, s.hold2];
+    var total = p.reduce(function (a, b) { return a + b; }, 0);
+    return total > 0 ? p : null;
+  }
+
+  function start() {
+    var plan = planFromSettings();
+    if (!plan) {
+      el.stats.textContent = 'Хотя бы одна фаза должна быть длиннее нуля';
+      return;
+    }
+    initAudio();
+    resumeAudio();
+    updateVolume();
+    saveSettings();
+
+    state.plan = plan;
+    state.running = true;
+    state.paused = false;
+    state.cycles = 0;
+    state.elapsedBefore = 0;
+    state.sessionStart = performance.now();
+    state.phaseIndex = -1;
+    el.panel.classList.add('hidden');
+    updateTempoUI();
+    setButtons();
+    nextPhase(performance.now());
+    loop();
+  }
+
+  // Переходит к следующей непустой фазе; считает завершённые циклы.
+  function nextPhase(now) {
+    var guard = 0;
+    do {
+      state.phaseIndex++;
+      if (state.phaseIndex >= PHASES.length) {
+        state.phaseIndex = 0;
+        state.cycles++;
+        if (checkLimit()) return;
+      }
+      guard++;
+    } while (state.plan[state.phaseIndex] <= 0 && guard <= PHASES.length * 2);
+
+    state.phaseStart = now;
+    el.phaseName.textContent = PHASES[state.phaseIndex].name;
+    playPhaseAudio(phaseDur(state.phaseIndex));
+  }
+
+  function checkLimit() {
+    var s = readSettings();
+    if (s.limitMode === 'cycles' && state.cycles >= s.limitValue) { finish(); return true; }
+    if (s.limitMode === 'minutes' && sessionSeconds() >= s.limitValue * 60) { finish(); return true; }
+    return false;
+  }
+
+  function sessionSeconds() {
+    if (!state.running) return state.elapsedBefore / 1000;
+    if (state.paused) return state.elapsedBefore / 1000;
+    return (state.elapsedBefore + (performance.now() - state.sessionStart)) / 1000;
+  }
+
+  function loop() {
+    cancelAnimationFrame(state.rafId);
+    state.rafId = requestAnimationFrame(function step() {
+      if (!state.running || state.paused) return;
+      var now = performance.now();
+      var dur = phaseDur(state.phaseIndex);
+      var elapsed = (now - state.phaseStart) / 1000;
+
+      if (elapsed >= dur) {
+        // Лимит по минутам может сработать и в середине цикла.
+        if (readSettings().limitMode === 'minutes' && checkLimit()) return;
+        nextPhase(now);
+        if (!state.running) return;
+        dur = phaseDur(state.phaseIndex);
+        elapsed = 0;
+      }
+
+      render(elapsed, dur);
+      state.rafId = requestAnimationFrame(step);
+    });
+  }
+
+  function render(elapsed, dur) {
+    var ph = PHASES[state.phaseIndex];
+    var t = dur > 0 ? Math.min(1, elapsed / dur) : 1;
+    var eased = t * t * (3 - 2 * t); // сглаживание на краях фазы
+    var scale = ph.from + (ph.to - ph.from) * eased;
+    el.circle.style.transform = 'scale(' + scale.toFixed(4) + ')';
+    el.countdown.textContent = Math.max(0, Math.ceil(dur - elapsed));
+    updateStats();
+  }
+
+  function updateStats() {
+    var s = readSettings();
+    var parts = ['Циклов: ' + state.cycles, 'Время: ' + fmt(sessionSeconds())];
+    if (s.limitMode === 'cycles') {
+      parts.push('осталось: ' + Math.max(0, s.limitValue - state.cycles));
+    } else if (s.limitMode === 'minutes') {
+      parts.push('осталось: ' + fmt(Math.max(0, s.limitValue * 60 - sessionSeconds())));
+    }
+    el.stats.textContent = parts.join(' · ');
+  }
+
+  function fmt(sec) {
+    sec = Math.floor(sec);
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function pause() {
+    if (!state.running || state.paused) return;
+    state.paused = true;
+    cancelAnimationFrame(state.rafId);
+    state.pausedPhaseElapsed = performance.now() - state.phaseStart;
+    state.elapsedBefore += performance.now() - state.sessionStart;
+    stopVoice();
+    el.phaseName.textContent = 'Пауза';
+    setButtons();
+  }
+
+  function resume() {
+    if (!state.running || !state.paused) return;
+    state.paused = false;
+    resumeAudio();
+    var now = performance.now();
+    state.sessionStart = now;
+    state.phaseStart = now - (state.pausedPhaseElapsed || 0);
+
+    // Досигрываем остаток фазы, чтобы звук совпал с кругом.
+    var left = phaseDur(state.phaseIndex) - (state.pausedPhaseElapsed || 0) / 1000;
+    el.phaseName.textContent = PHASES[state.phaseIndex].name;
+    playPhaseAudio(Math.max(0.05, left));
+
+    setButtons();
+    loop();
+  }
+
+  function stop(silent) {
+    // Фиксируем итоговое время, иначе после остановки счётчик обнулится.
+    if (state.running && !state.paused) {
+      state.elapsedBefore += performance.now() - state.sessionStart;
+    }
+    state.running = false;
+    state.paused = false;
+    state.plan = null; // дальше темп считается от полей настроек
+    cancelAnimationFrame(state.rafId);
+    stopVoice();
+    el.panel.classList.remove('hidden');
+    updateTempoUI();
+    el.circle.style.transform = 'scale(.5)';
+    el.countdown.textContent = '—';
+    el.phaseName.textContent = silent ? 'Готово' : 'Остановлено';
+    setButtons();
+    updateStats();
+  }
+
+  function finish() {
+    stop(true);
+    el.phaseName.textContent = 'Завершено';
+    playChime(659.25, 1.4, 0);
+    playChime(987.77, 2.0, 0.45);
+  }
+
+  function setButtons() {
+    el.startBtn.disabled = state.running && !state.paused;
+    el.startBtn.textContent = state.paused ? 'Продолжить' : 'Старт';
+    el.pauseBtn.disabled = !state.running || state.paused;
+    el.stopBtn.disabled = !state.running;
+  }
+
+  // ------------------------------------------------------------------
+  // События
+  // ------------------------------------------------------------------
+  el.startBtn.addEventListener('click', function () {
+    if (state.paused) resume(); else start();
+  });
+  el.pauseBtn.addEventListener('click', pause);
+  el.stopBtn.addEventListener('click', function () { stop(false); });
+
+  el.presets.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var v = btn.dataset.p.split(',');
+    el.inhale.value = v[0];
+    el.hold1.value = v[1];
+    el.exhale.value = v[2];
+    el.hold2.value = v[3];
+    markActivePreset();
+    updateTempoUI();
+    saveSettings();
+  });
+
+  el.slowerBtn.addEventListener('click', function () { changeRate(RATE_STEP); });
+  el.fasterBtn.addEventListener('click', function () { changeRate(-RATE_STEP); });
+
+  [el.inhale, el.hold1, el.exhale, el.hold2].forEach(function (i) {
+    i.addEventListener('input', function () { markActivePreset(); updateTempoUI(); saveSettings(); });
+  });
+  el.limitMode.addEventListener('change', function () { syncLimitInput(); saveSettings(); });
+  el.limitValue.addEventListener('input', saveSettings);
+  el.volume.addEventListener('input', function () { updateVolume(); saveSettings(); });
+  el.soundOn.addEventListener('change', function () { updateVolume(); saveSettings(); });
+  el.soundTheme.addEventListener('change', function () { stopVoice(); saveSettings(); });
+
+  // Проба: короткий вдох-выдох выбранным тембром, не трогая сессию.
+  el.previewBtn.addEventListener('click', function () {
+    if (state.running && !state.paused) return;
+    initAudio();
+    resumeAudio();
+    updateVolume();
+    playBreath(true, 2.2);
+    setTimeout(function () { playBreath(false, 2.2); }, 2300);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!state.running) start();
+      else if (state.paused) resume();
+      else pause();
+    } else if (e.code === 'Escape' && state.running) {
+      stop(false);
+    } else if (e.code === 'ArrowDown' || e.code === 'Minus') {
+      e.preventDefault();
+      changeRate(RATE_STEP);  // длиннее фазы = медленнее дыхание
+    } else if (e.code === 'ArrowUp' || e.code === 'Equal') {
+      e.preventDefault();
+      changeRate(-RATE_STEP);
+    }
+  });
+
+  loadSettings();
+  setButtons();
+})();
+</script>
+</body>
+</html>
