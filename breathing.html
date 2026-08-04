@@ -255,7 +255,7 @@
   <button id="slowerBtn" title="Дышать медленнее">−</button>
   <div class="tempoInfo">
     <span id="tempoValue">×1.00</span>
-    <span id="tempoPhases">4.0 / 4.0 / 4.0 / 4.0 с</span>
+    <span id="tempoPhases">2.0 / 0.0 / 2.0 / 0.0 с</span>
   </div>
   <button id="fasterBtn" title="Дышать быстрее">+</button>
 </div>
@@ -273,17 +273,17 @@
     <div class="presets" id="presets">
       <button data-p="4,4,4,4">Бокс 4-4-4-4</button>
       <button data-p="4,7,8,0">4-7-8</button>
-      <button data-p="5,0,5,0">Когерентное 5-5</button>
+      <button data-p="2,0,2,0">Когерентное 2-2</button>
     </div>
   </fieldset>
 
   <fieldset>
     <legend>Фазы, секунды</legend>
     <div class="phases">
-      <label>Вдох <input type="number" id="inhale" min="0" max="60" step="0.5" value="4"></label>
-      <label>Задержка <input type="number" id="hold1" min="0" max="60" step="0.5" value="4"></label>
-      <label>Выдох <input type="number" id="exhale" min="0" max="60" step="0.5" value="4"></label>
-      <label>Задержка <input type="number" id="hold2" min="0" max="60" step="0.5" value="4"></label>
+      <label>Вдох <input type="number" id="inhale" min="0" max="60" step="0.5" value="2"></label>
+      <label>Задержка <input type="number" id="hold1" min="0" max="60" step="0.5" value="0"></label>
+      <label>Выдох <input type="number" id="exhale" min="0" max="60" step="0.5" value="2"></label>
+      <label>Задержка <input type="number" id="hold2" min="0" max="60" step="0.5" value="0"></label>
     </div>
   </fieldset>
 
@@ -337,7 +337,7 @@
   // ------------------------------------------------------------------
   var STORE_KEY = 'breathing.settings';
   var DEFAULTS = {
-    inhale: 4, hold1: 4, exhale: 4, hold2: 4,
+    inhale: 2, hold1: 0, exhale: 2, hold2: 0,
     limitMode: 'none', limitValue: 5,
     soundOn: true, volume: 45, soundTheme: 'pad', rate: 1
   };
