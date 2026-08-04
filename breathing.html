@@ -112,6 +112,11 @@
   }
   .tempoInfo #tempoValue { display: block; font-size: 17px; }
   .tempoInfo #tempoPhases { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tempoSlider {
+    width: min(280px, 84vw);
+    margin: 0 0 20px;
+    accent-color: var(--accent);
+  }
 
   /* ---------- кнопки ---------- */
   .controls { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; justify-content: center; }
@@ -210,6 +215,7 @@
   </div>
   <button id="fasterBtn" title="Дышать быстрее">+</button>
 </div>
+<input type="range" id="tempoSlider" class="tempoSlider" min="0.5" max="2.5" step="0.05" value="1" aria-label="Темп дыхания">
 
 <div class="controls">
   <button id="startBtn" class="primary">Старт</button>
@@ -314,6 +320,7 @@
     fasterBtn: document.getElementById('fasterBtn'),
     tempoValue: document.getElementById('tempoValue'),
     tempoPhases: document.getElementById('tempoPhases'),
+    tempoSlider: document.getElementById('tempoSlider'),
     startBtn: document.getElementById('startBtn'),
     pauseBtn: document.getElementById('pauseBtn'),
     stopBtn: document.getElementById('stopBtn')
@@ -716,12 +723,22 @@
     }).join(' / ') + ' с';
     el.slowerBtn.disabled = state.rate >= RATE_MAX - 1e-6;
     el.fasterBtn.disabled = state.rate <= RATE_MIN + 1e-6;
+    // Слайдер обновляем только если он не в фокусе — иначе перетаскивание дёргается.
+    if (document.activeElement !== el.tempoSlider) {
+      el.tempoSlider.value = state.rate;
+    }
   }
 
-  // Меняет темп, сохраняя пройденную долю текущей фазы: круг не прыгает,
-  // звук переигрывается на новый остаток фазы.
   function changeRate(delta) {
-    var next = num((state.rate + delta).toFixed(2), RATE_MIN, RATE_MAX);
+    setRate(state.rate + delta);
+  }
+
+  // Устанавливает темп на конкретное значение (кнопки шага и слайдер ведут сюда).
+  // Сохраняет пройденную долю текущей фазы: круг не прыгает, звук переигрывается
+  // на новый остаток фазы.
+  function setRate(value) {
+    var next = num(Math.round(value / RATE_STEP) * RATE_STEP, RATE_MIN, RATE_MAX);
+    next = Math.round(next * 100) / 100;
     if (next === state.rate) return;
 
     if (state.running && !state.paused) {
@@ -942,6 +959,7 @@
 
   el.slowerBtn.addEventListener('click', function () { changeRate(RATE_STEP); });
   el.fasterBtn.addEventListener('click', function () { changeRate(-RATE_STEP); });
+  el.tempoSlider.addEventListener('input', function () { setRate(parseFloat(el.tempoSlider.value)); });
 
   [el.inhale, el.hold1, el.exhale, el.hold2].forEach(function (i) {
     i.addEventListener('input', function () { markActivePreset(); updateTempoUI(); saveSettings(); });
