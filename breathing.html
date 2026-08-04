@@ -114,8 +114,52 @@
   .tempoInfo #tempoPhases { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
   .tempoSlider {
     width: min(280px, 84vw);
+    height: 44px;
     margin: 0 0 20px;
     accent-color: var(--accent);
+    touch-action: none; /* палец тащит бегунок, а не скроллит страницу */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+  /*
+   * В WebKit/Blink реальная (кликабельная и тач-) высота слайдера равна
+   * высоте псевдоэлемента трека, а не height у самого <input> — поэтому
+   * трек растянут на все 44px, а тонкая полоска нарисована градиентом
+   * по центру этой зоны через background-size/position.
+   */
+  .tempoSlider::-webkit-slider-runnable-track {
+    height: 44px;
+    background:
+      linear-gradient(90deg, var(--accent), var(--line)) no-repeat center / 100% 6px;
+  }
+  .tempoSlider::-moz-range-track {
+    height: 44px;
+    background:
+      linear-gradient(var(--line), var(--line)) no-repeat center / 100% 6px;
+  }
+  .tempoSlider::-moz-range-progress {
+    height: 44px;
+    background:
+      linear-gradient(var(--accent), var(--accent)) no-repeat center / 100% 6px;
+  }
+  .tempoSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: 8px; /* центрирует 28px бегунок в 44px треке */
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #0b1016;
+    box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(0,0,0,.4);
+  }
+  .tempoSlider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #0b1016;
+    box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(0,0,0,.4);
   }
 
   /* ---------- кнопки ---------- */
