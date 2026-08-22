@@ -6,8 +6,8 @@
 <title>Таймер обратного отсчёта</title>
 <style>
   :root {
-    --bg: #131018;
-    --bg2: color-mix(in srgb, var(--bg) 85%, white 15%);
+    --bg: #17161a;
+    --bg2: color-mix(in srgb, var(--bg) 96%, white 4%);
     --bg3: color-mix(in srgb, var(--bg) 68%, white 32%);
     --fg: #f1ece7;
     --muted: #948ea0;
@@ -49,7 +49,7 @@
   html, body { height: 100%; }
   body {
     margin: 0;
-    background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--bg) 68%, white 32%) 0%, var(--bg) 60%);
+    background: var(--bg);
     color: var(--fg);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-weight: var(--ui-weight);
@@ -390,7 +390,7 @@
   const ACCENT_KEY = 'timer.accent';
   const DEFAULT_ACCENT = '#ff8a65'; // оранжевый по умолчанию
   const BG_KEY = 'timer.bg';
-  const DEFAULT_BG = '#131018'; // тёплый графитово-сливовый
+  const DEFAULT_BG = '#17161a'; // как в Focus Ring
   const WEIGHT_KEY = 'timer.weight';
   const WEIGHTS = [
     { name: 'тонкий', count: 200, ui: 400 },
