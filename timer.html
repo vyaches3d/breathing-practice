@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Таймер обратного отсчёта</title>
+<style>
+  :root {
+    --bg: #0b1016;
+    --bg2: #121b25;
+    --fg: #e8f0f7;
+    --muted: #7d92a6;
+    --accent: #4fd1c5;
+    --accent-text: #06201d;
+    --accent2: color-mix(in srgb, var(--accent) 65%, white 35%);
+    --danger: #ff6b6b;
+    --line: #22303d;
+    --ui-weight: 400;
+    --count-weight: 200;
+    --count-font: inherit;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(120% 90% at 50% 0%, #16222f 0%, var(--bg) 60%);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-weight: var(--ui-weight);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    padding: 20px 16px 32px;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color .3s;
+  }
+  body.done {
+    animation: flash 1s ease-in-out infinite;
+  }
+  @keyframes flash {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(255,107,107,.18); }
+  }
+  h1 {
+    font-size: 15px;
+    font-weight: var(--ui-weight);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 4px 0 18px;
+    text-align: center;
+  }
+  @media (max-width: 480px) {
+    h1 {
+      margin-top: 40px;
+      font-size: 12px;
+      letter-spacing: .1em;
+    }
+  }
+
+  /* ---------- сцена ---------- */
+  .stage {
+    position: relative;
+    width: min(64vw, 46vh, 340px);
+    height: min(64vw, 46vh, 340px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0 4px;
+    flex: none;
+  }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+  .track { fill: none; stroke: var(--line); stroke-width: 5; }
+  .progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset .25s linear, stroke .3s;
+  }
+  .progress.done { stroke: var(--danger); }
+  .readout {
+    position: relative;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .count {
+    font-size: clamp(40px, 12vw, 68px);
+    font-weight: var(--count-weight);
+    font-family: var(--count-font);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    cursor: text;
+  }
+  .count.done { color: var(--danger); }
+
+  /* ---------- ввод времени ---------- */
+  .setup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 14px;
+  }
+  .setup input {
+    width: 64px;
+    text-align: center;
+    font-size: 26px;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--fg);
+    padding: 8px 4px;
+  }
+  .setup input:focus { outline: none; border-color: var(--accent); }
+  .setup span { color: var(--muted); font-size: 22px; }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 340px;
+    margin-bottom: 18px;
+  }
+  .presets button {
+    padding: 7px 14px;
+    font-size: 13px;
+    border-radius: 999px;
+  }
+  .presets button.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  /* ---------- цвет интерфейса ---------- */
+  .colors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px var(--line) inset;
+  }
+  .swatch.active {
+    border-color: var(--fg);
+  }
+  .swatch.custom {
+    position: relative;
+    overflow: hidden;
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  }
+  .swatch.custom input[type="color"] {
+    position: absolute;
+    inset: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    opacity: 0;
+  }
+
+  /* ---------- жирность шрифта ---------- */
+  .weights {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .weights button {
+    padding: 6px 14px;
+    font-size: 16px;
+    border-radius: 999px;
+  }
+  .weights button.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  /* ---------- шрифт цифр ---------- */
+  .fonts {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .fonts button {
+    padding: 6px 14px;
+    font-size: 15px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .fonts button.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  /* ---------- кнопки ---------- */
+  button {
+    background: var(--bg2);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 15px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: var(--ui-weight);
+  }
+  button:hover { border-color: var(--accent2); }
+  button:active { transform: scale(.97); }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .controls button {
+    min-width: 96px;
+    padding: 12px 18px;
+    font-size: 16px;
+  }
+  #startBtn { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: calc(var(--ui-weight) + 100); }
+  #resetBtn:hover { border-color: var(--danger); }
+
+  .hint {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  .hint kbd {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: inherit;
+  }
+
+  a.home {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  a.home:hover { color: var(--accent); }
+
+  #fullscreenBtn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  /* ---------- полноэкранный режим: только кольцо и кнопка возврата ---------- */
+  body.fs-only {
+    justify-content: center;
+  }
+  body.fs-only > *:not(.stage):not(#fullscreenBtn) {
+    display: none;
+  }
+  body.fs-only .stage {
+    width: min(88vw, 88vh, 640px);
+    height: min(88vw, 88vh, 640px);
+    margin: 0;
+  }
+  body.fs-only .count {
+    font-size: clamp(60px, 16vw, 220px);
+  }
+</style>
+</head>
+<body>
+<a class="home" href="index.html">← практики</a>
+<button id="fullscreenBtn" title="Полный экран">⛶</button>
+<h1>Таймер обратного отсчёта</h1>
+
+<div class="stage">
+  <svg viewBox="0 0 100 100">
+    <circle class="track" cx="50" cy="50" r="45"></circle>
+    <circle id="progressCircle" class="progress" cx="50" cy="50" r="45"></circle>
+  </svg>
+  <div class="readout">
+    <div class="count" id="count">05:00</div>
+  </div>
+</div>
+
+<div class="setup" id="setup">
+  <input id="hh" inputmode="numeric" maxlength="2" value="00">
+  <span>:</span>
+  <input id="mm" inputmode="numeric" maxlength="2" value="05">
+  <span>:</span>
+  <input id="ss" inputmode="numeric" maxlength="2" value="00">
+</div>
+
+<div class="presets" id="presets"></div>
+
+<div class="colors" id="colors"></div>
+
+<div class="weights" id="weights"></div>
+
+<div class="fonts" id="fonts"></div>
+
+<div class="controls">
+  <button id="startBtn">Старт</button>
+  <button id="resetBtn">Сброс</button>
+</div>
+
+<div class="hint">
+  <span><kbd>Пробел</kbd> старт / пауза &nbsp; <kbd>Esc</kbd> сброс &nbsp; <kbd>F</kbd> полный экран &nbsp; <kbd>↑</kbd>/<kbd>↓</kbd> ±1 мин</span>
+</div>
+
+<script>
+(() => {
+  const PRESETS = [5, 15, 25, 45]; // минуты
+  const STORAGE_KEY = 'timer.lastSeconds';
+  const COLOR_KEY = 'timer.accent';
+  const COLORS = ['#4fd1c5', '#63a4ff', '#a78bfa', '#f472b6', '#fbbf24', '#34d399', '#ff8a65', '#f87171'];
+  const DEFAULT_COLOR = '#ff8a65'; // оранжевый по умолчанию
+  const WEIGHT_KEY = 'timer.weight';
+  const WEIGHTS = [
+    { name: 'тонкий', count: 200, ui: 400 },
+    { name: 'обычный', count: 400, ui: 500 },
+    { name: 'жирный', count: 700, ui: 700 },
+    { name: 'чёрный', count: 900, ui: 800 },
+  ];
+  const FONT_KEY = 'timer.font';
+  const FONTS = [
+    { name: 'обычный', family: 'inherit' },
+    { name: 'моно', family: '"SFMono-Regular", ui-monospace, "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace' },
+    { name: 'засечки', family: '"Georgia", "Times New Roman", serif' },
+  ];
+
+  const hhEl = document.getElementById('hh');
+  const mmEl = document.getElementById('mm');
+  const ssEl = document.getElementById('ss');
+  const setupEl = document.getElementById('setup');
+  const countEl = document.getElementById('count');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const presetsEl = document.getElementById('presets');
+  const colorsEl = document.getElementById('colors');
+  const weightsEl = document.getElementById('weights');
+  const fontsEl = document.getElementById('fonts');
+  const progressCircle = document.getElementById('progressCircle');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const bodyEl = document.body;
+  const root = document.documentElement;
+
+  const R = 45;
+  const CIRC = 2 * Math.PI * R;
+  progressCircle.style.strokeDasharray = `${CIRC}`;
+  progressCircle.style.strokeDashoffset = '0';
+
+  let totalSeconds = 5 * 60;
+  let remaining = totalSeconds;
+  let running = false;
+  let endTime = null;
+  let rafId = null;
+  let audioCtx = null;
+  let ringing = false;
+
+  function fmt(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const p = n => String(n).padStart(2, '0');
+    return h > 0 ? `${p(h)}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+  }
+
+  function readInputs() {
+    const h = parseInt(hhEl.value, 10) || 0;
+    const m = parseInt(mmEl.value, 10) || 0;
+    const s = parseInt(ssEl.value, 10) || 0;
+    return Math.max(1, h * 3600 + m * 60 + s);
+  }
+
+  function writeInputs(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    hhEl.value = String(h).padStart(2, '0');
+    mmEl.value = String(m).padStart(2, '0');
+    ssEl.value = String(s).padStart(2, '0');
+  }
+
+  function updatePresetActive() {
+    const mins = totalSeconds / 60;
+    [...presetsEl.children].forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.min) === mins);
+    });
+  }
+
+  function render() {
+    countEl.textContent = fmt(remaining);
+    document.title = running ? `${fmt(remaining)} — таймер` : 'Таймер обратного отсчёта';
+    const frac = totalSeconds > 0 ? remaining / totalSeconds : 0;
+    progressCircle.style.strokeDashoffset = `${CIRC * (1 - frac)}`;
+  }
+
+  function tick() {
+    if (!running) return;
+    const now = Date.now();
+    remaining = Math.max(0, (endTime - now) / 1000);
+    render();
+    if (remaining <= 0) {
+      finish();
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function start() {
+    if (running) return;
+    if (remaining <= 0) remaining = totalSeconds = readInputs();
+    running = true;
+    endTime = Date.now() + remaining * 1000;
+    startBtn.textContent = 'Пауза';
+    setupEl.style.pointerEvents = 'none';
+    setupEl.style.opacity = '.4';
+    countEl.contentEditable = 'false';
+    bodyEl.classList.remove('done');
+    countEl.classList.remove('done');
+    progressCircle.classList.remove('done');
+    rafId = requestAnimationFrame(tick);
+    requestWakeLock();
+  }
+
+  function pause() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    startBtn.textContent = 'Продолжить';
+    releaseWakeLock();
+    render();
+  }
+
+  function reset() {
+    running = false;
+    ringing = false;
+    cancelAnimationFrame(rafId);
+    releaseWakeLock();
+    bodyEl.classList.remove('done');
+    countEl.classList.remove('done');
+    progressCircle.classList.remove('done');
+    totalSeconds = readInputs();
+    remaining = totalSeconds;
+    startBtn.textContent = 'Старт';
+    setupEl.style.pointerEvents = '';
+    setupEl.style.opacity = '';
+    updatePresetActive();
+    render();
+  }
+
+  function finish() {
+    running = false;
+    remaining = 0;
+    cancelAnimationFrame(rafId);
+    startBtn.textContent = 'Старт';
+    setupEl.style.pointerEvents = '';
+    setupEl.style.opacity = '';
+    bodyEl.classList.add('done');
+    countEl.classList.add('done');
+    progressCircle.classList.add('done');
+    render();
+    ring();
+  }
+
+  function ring() {
+    ringing = true;
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const beeps = 5;
+    for (let i = 0; i < beeps; i++) {
+      const t = audioCtx.currentTime + i * 0.55;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.linearRampToValueAtTime(0, t + 0.35);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    }
+  }
+
+  function saveLast() {
+    try { localStorage.setItem(STORAGE_KEY, String(readInputs())); } catch (e) {}
+  }
+
+  // ---------- полный экран ----------
+  function fsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+  }
+  function requestFS(el) {
+    const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    return fn ? fn.call(el) : Promise.reject();
+  }
+  function exitFS() {
+    const fn = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    return fn ? fn.call(document) : Promise.reject();
+  }
+  function updateFullscreenIcon() {
+    const on = !!fsElement();
+    fullscreenBtn.textContent = on ? '⤢' : '⛶';
+    fullscreenBtn.title = on ? 'Выйти из полноэкранного режима' : 'Полный экран';
+    bodyEl.classList.toggle('fs-only', on);
+  }
+  fullscreenBtn.addEventListener('click', () => {
+    if (!fsElement()) requestFS(document.documentElement).catch(() => {});
+    else exitFS().catch(() => {});
+  });
+  ['fullscreenchange', 'webkitfullscreenchange', 'MSFullscreenChange'].forEach(evt =>
+    document.addEventListener(evt, updateFullscreenIcon)
+  );
+
+  // ---------- не давать экрану гаснуть ----------
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {}
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (running || ringing) && !wakeLock) {
+      requestWakeLock();
+    }
+  });
+
+  // ---------- цвет интерфейса ----------
+  function textOn(hex) {
+    const c = hex.replace('#', '');
+    const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum > 0.6 ? '#06201d' : '#f2f8f6';
+  }
+
+  function updateColorActive(hex) {
+    [...colorsEl.querySelectorAll('.swatch[data-color]')].forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.color.toLowerCase() === hex.toLowerCase());
+    });
+  }
+
+  function applyColor(hex, save) {
+    root.style.setProperty('--accent', hex);
+    root.style.setProperty('--accent-text', textOn(hex));
+    customColorInput.value = hex;
+    updateColorActive(hex);
+    if (save) {
+      try { localStorage.setItem(COLOR_KEY, hex); } catch (e) {}
+    }
+  }
+
+  let customColorInput;
+
+  function buildColors() {
+    COLORS.forEach(hex => {
+      const btn = document.createElement('button');
+      btn.className = 'swatch';
+      btn.style.background = hex;
+      btn.dataset.color = hex;
+      btn.title = hex;
+      btn.addEventListener('click', () => applyColor(hex, true));
+      colorsEl.appendChild(btn);
+    });
+    const label = document.createElement('label');
+    label.className = 'swatch custom';
+    label.title = 'свой цвет';
+    customColorInput = document.createElement('input');
+    customColorInput.type = 'color';
+    customColorInput.value = DEFAULT_COLOR;
+    customColorInput.addEventListener('input', () => applyColor(customColorInput.value, true));
+    label.appendChild(customColorInput);
+    colorsEl.appendChild(label);
+  }
+
+  // ---------- жирность шрифта ----------
+  function applyWeight(idx, save) {
+    const w = WEIGHTS[idx] || WEIGHTS[0];
+    root.style.setProperty('--count-weight', w.count);
+    root.style.setProperty('--ui-weight', w.ui);
+    [...weightsEl.children].forEach((btn, i) => btn.classList.toggle('active', i === idx));
+    if (save) {
+      try { localStorage.setItem(WEIGHT_KEY, String(idx)); } catch (e) {}
+    }
+  }
+
+  function buildWeights() {
+    WEIGHTS.forEach((w, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = 'Aa';
+      btn.style.fontWeight = w.count;
+      btn.title = w.name;
+      btn.addEventListener('click', () => applyWeight(i, true));
+      weightsEl.appendChild(btn);
+    });
+  }
+
+  // ---------- шрифт цифр ----------
+  function applyFont(idx, save) {
+    const f = FONTS[idx] || FONTS[0];
+    root.style.setProperty('--count-font', f.family);
+    [...fontsEl.children].forEach((btn, i) => btn.classList.toggle('active', i === idx));
+    if (save) {
+      try { localStorage.setItem(FONT_KEY, String(idx)); } catch (e) {}
+    }
+  }
+
+  function buildFonts() {
+    FONTS.forEach((f, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = '123';
+      btn.style.fontFamily = f.family;
+      btn.title = f.name;
+      btn.addEventListener('click', () => applyFont(i, true));
+      fontsEl.appendChild(btn);
+    });
+  }
+
+  // ---------- presets ----------
+  PRESETS.forEach(min => {
+    const btn = document.createElement('button');
+    btn.textContent = min < 60 ? `${min} мин` : `${min / 60} ч`;
+    btn.dataset.min = min;
+    btn.addEventListener('click', () => {
+      writeInputs(min * 60);
+      reset();
+      saveLast();
+    });
+    presetsEl.appendChild(btn);
+  });
+
+  // ---------- input handling ----------
+  [hhEl, mmEl, ssEl].forEach(el => {
+    el.addEventListener('focus', () => el.select());
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g, '').slice(0, 2);
+    });
+    el.addEventListener('blur', () => {
+      let v = parseInt(el.value, 10) || 0;
+      if (el === mmEl || el === ssEl) v = Math.min(59, v);
+      el.value = String(v).padStart(2, '0');
+      if (!running) { reset(); saveLast(); }
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') el.blur();
+    });
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (ringing) { ringing = false; reset(); return; }
+    running ? pause() : start();
+  });
+  resetBtn.addEventListener('click', () => { ringing = false; reset(); });
+
+  document.addEventListener('keydown', e => {
+    const tag = document.activeElement.tagName;
+    if (tag === 'INPUT') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (ringing) { ringing = false; reset(); return; }
+      running ? pause() : start();
+    } else if (e.key === 'Escape') {
+      ringing = false;
+      reset();
+    } else if (e.code === 'KeyF') {
+      e.preventDefault();
+      if (!fsElement()) requestFS(document.documentElement).catch(() => {});
+      else exitFS().catch(() => {});
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (running) return;
+      e.preventDefault();
+      const delta = e.key === 'ArrowUp' ? 60 : -60;
+      writeInputs(Math.max(1, readInputs() + delta));
+      reset();
+      saveLast();
+    }
+  });
+
+  // ---------- init ----------
+  updateFullscreenIcon();
+  buildColors();
+  let initialColor = DEFAULT_COLOR;
+  try {
+    const savedColor = localStorage.getItem(COLOR_KEY);
+    if (savedColor) initialColor = savedColor;
+  } catch (e) {}
+  applyColor(initialColor, false);
+
+  buildWeights();
+  let initialWeightIdx = 2; // жирный, 700 — как в приложении с фокусировкой
+  try {
+    const savedWeight = parseInt(localStorage.getItem(WEIGHT_KEY), 10);
+    if (savedWeight >= 0 && savedWeight < WEIGHTS.length) initialWeightIdx = savedWeight;
+  } catch (e) {}
+  applyWeight(initialWeightIdx, false);
+
+  buildFonts();
+  let initialFontIdx = 0;
+  try {
+    const savedFont = parseInt(localStorage.getItem(FONT_KEY), 10);
+    if (savedFont >= 0 && savedFont < FONTS.length) initialFontIdx = savedFont;
+  } catch (e) {}
+  applyFont(initialFontIdx, false);
+
+  let initial = 5 * 60;
+  try {
+    const saved = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+    if (saved > 0) initial = saved;
+  } catch (e) {}
+  writeInputs(initial);
+  reset();
+})();
+</script>
+</body>
+</html>
