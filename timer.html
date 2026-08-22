@@ -6,15 +6,15 @@
 <title>Таймер обратного отсчёта</title>
 <style>
   :root {
-    --bg: #0b1016;
-    --bg2: #121b25;
-    --fg: #e8f0f7;
-    --muted: #7d92a6;
-    --accent: #4fd1c5;
+    --bg: #131018;
+    --bg2: color-mix(in srgb, var(--bg) 82%, white 18%);
+    --fg: #f1ece7;
+    --muted: #948ea0;
+    --accent: #ff8a65;
     --accent-text: #06201d;
     --accent2: color-mix(in srgb, var(--accent) 65%, white 35%);
     --danger: #ff6b6b;
-    --line: #22303d;
+    --line: color-mix(in srgb, var(--bg) 70%, white 30%);
     --ui-weight: 400;
     --count-weight: 200;
     --count-font: inherit;
@@ -46,7 +46,7 @@
   html, body { height: 100%; }
   body {
     margin: 0;
-    background: radial-gradient(120% 90% at 50% 0%, #16222f 0%, var(--bg) 60%);
+    background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--bg) 68%, white 32%) 0%, var(--bg) 60%);
     color: var(--fg);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-weight: var(--ui-weight);
@@ -158,43 +158,41 @@
     border-color: var(--accent);
   }
 
-  /* ---------- цвет интерфейса ---------- */
+  /* ---------- цвет интерфейса и фона ---------- */
   .colors {
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    gap: 10px;
+    align-items: flex-start;
+    gap: 28px;
     margin-bottom: 18px;
   }
-  .swatch {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    padding: 0;
-    cursor: pointer;
-    box-shadow: 0 0 0 1px var(--line) inset;
+  .color-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
   }
-  .swatch.active {
-    border-color: var(--fg);
+  .color-picker span {
+    font-size: 11px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
-  .swatch.custom {
-    position: relative;
-    overflow: hidden;
-    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
-  }
-  .swatch.custom input[type="color"] {
-    position: absolute;
-    inset: -6px;
-    width: calc(100% + 12px);
-    height: calc(100% + 12px);
+  input[type="color"].circle {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 34px;
+    height: 34px;
     border: none;
+    border-radius: 50%;
     padding: 0;
     cursor: pointer;
     background: none;
-    opacity: 0;
+    box-shadow: 0 0 0 2px var(--line);
   }
+  input[type="color"].circle::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+  input[type="color"].circle::-webkit-color-swatch { border: none; border-radius: 50%; }
+  input[type="color"].circle::-moz-color-swatch { border: none; border-radius: 50%; }
 
   /* ---------- жирность шрифта ---------- */
   .weights {
@@ -343,7 +341,16 @@
 
 <div class="presets" id="presets"></div>
 
-<div class="colors" id="colors"></div>
+<div class="colors">
+  <label class="color-picker">
+    <input type="color" id="accentColorInput" class="circle">
+    <span>интерфейс</span>
+  </label>
+  <label class="color-picker">
+    <input type="color" id="bgColorInput" class="circle">
+    <span>фон</span>
+  </label>
+</div>
 
 <div class="weights" id="weights"></div>
 
@@ -362,9 +369,10 @@
 (() => {
   const PRESETS = [5, 15, 25, 45]; // минуты
   const STORAGE_KEY = 'timer.lastSeconds';
-  const COLOR_KEY = 'timer.accent';
-  const COLORS = ['#4fd1c5', '#63a4ff', '#a78bfa', '#f472b6', '#fbbf24', '#34d399', '#ff8a65', '#f87171'];
-  const DEFAULT_COLOR = '#ff8a65'; // оранжевый по умолчанию
+  const ACCENT_KEY = 'timer.accent';
+  const DEFAULT_ACCENT = '#ff8a65'; // оранжевый по умолчанию
+  const BG_KEY = 'timer.bg';
+  const DEFAULT_BG = '#131018'; // тёплый графитово-сливовый
   const WEIGHT_KEY = 'timer.weight';
   const WEIGHTS = [
     { name: 'тонкий', count: 200, ui: 400 },
@@ -388,7 +396,8 @@
   const startBtn = document.getElementById('startBtn');
   const resetBtn = document.getElementById('resetBtn');
   const presetsEl = document.getElementById('presets');
-  const colorsEl = document.getElementById('colors');
+  const accentColorInput = document.getElementById('accentColorInput');
+  const bgColorInput = document.getElementById('bgColorInput');
   const weightsEl = document.getElementById('weights');
   const fontsEl = document.getElementById('fonts');
   const progressCircle = document.getElementById('progressCircle');
@@ -582,52 +591,39 @@
     }
   });
 
-  // ---------- цвет интерфейса ----------
-  function textOn(hex) {
+  // ---------- цвет интерфейса и фона ----------
+  function luminance(hex) {
     const c = hex.replace('#', '');
     const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return lum > 0.6 ? '#06201d' : '#f2f8f6';
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
 
-  function updateColorActive(hex) {
-    [...colorsEl.querySelectorAll('.swatch[data-color]')].forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.color.toLowerCase() === hex.toLowerCase());
-    });
+  function textOn(hex) {
+    return luminance(hex) > 0.6 ? '#06201d' : '#f2f8f6';
   }
 
-  function applyColor(hex, save) {
+  function applyAccentColor(hex, save) {
     root.style.setProperty('--accent', hex);
     root.style.setProperty('--accent-text', textOn(hex));
-    customColorInput.value = hex;
-    updateColorActive(hex);
+    accentColorInput.value = hex;
     if (save) {
-      try { localStorage.setItem(COLOR_KEY, hex); } catch (e) {}
+      try { localStorage.setItem(ACCENT_KEY, hex); } catch (e) {}
     }
   }
 
-  let customColorInput;
-
-  function buildColors() {
-    COLORS.forEach(hex => {
-      const btn = document.createElement('button');
-      btn.className = 'swatch';
-      btn.style.background = hex;
-      btn.dataset.color = hex;
-      btn.title = hex;
-      btn.addEventListener('click', () => applyColor(hex, true));
-      colorsEl.appendChild(btn);
-    });
-    const label = document.createElement('label');
-    label.className = 'swatch custom';
-    label.title = 'свой цвет';
-    customColorInput = document.createElement('input');
-    customColorInput.type = 'color';
-    customColorInput.value = DEFAULT_COLOR;
-    customColorInput.addEventListener('input', () => applyColor(customColorInput.value, true));
-    label.appendChild(customColorInput);
-    colorsEl.appendChild(label);
+  function applyBgColor(hex, save) {
+    const light = luminance(hex) > 0.55;
+    root.style.setProperty('--bg', hex);
+    root.style.setProperty('--fg', light ? '#17141c' : '#f1ece7');
+    root.style.setProperty('--muted', light ? '#6b6473' : '#948ea0');
+    bgColorInput.value = hex;
+    if (save) {
+      try { localStorage.setItem(BG_KEY, hex); } catch (e) {}
+    }
   }
+
+  accentColorInput.addEventListener('input', () => applyAccentColor(accentColorInput.value, true));
+  bgColorInput.addEventListener('input', () => applyBgColor(bgColorInput.value, true));
 
   // ---------- жирность шрифта ----------
   function applyWeight(idx, save) {
@@ -734,13 +730,19 @@
 
   // ---------- init ----------
   updateFullscreenIcon();
-  buildColors();
-  let initialColor = DEFAULT_COLOR;
+  let initialAccent = DEFAULT_ACCENT;
   try {
-    const savedColor = localStorage.getItem(COLOR_KEY);
-    if (savedColor) initialColor = savedColor;
+    const savedAccent = localStorage.getItem(ACCENT_KEY);
+    if (savedAccent) initialAccent = savedAccent;
   } catch (e) {}
-  applyColor(initialColor, false);
+  applyAccentColor(initialAccent, false);
+
+  let initialBg = DEFAULT_BG;
+  try {
+    const savedBg = localStorage.getItem(BG_KEY);
+    if (savedBg) initialBg = savedBg;
+  } catch (e) {}
+  applyBgColor(initialBg, false);
 
   buildWeights();
   let initialWeightIdx = 2; // жирный, 700 — как в приложении с фокусировкой
