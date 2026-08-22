@@ -7,14 +7,17 @@
 <style>
   :root {
     --bg: #131018;
-    --bg2: color-mix(in srgb, var(--bg) 82%, white 18%);
+    --bg2: color-mix(in srgb, var(--bg) 85%, white 15%);
+    --bg3: color-mix(in srgb, var(--bg) 68%, white 32%);
     --fg: #f1ece7;
     --muted: #948ea0;
     --accent: #ff8a65;
     --accent-text: #06201d;
     --accent2: color-mix(in srgb, var(--accent) 65%, white 35%);
     --danger: #ff6b6b;
-    --line: color-mix(in srgb, var(--bg) 70%, white 30%);
+    --line: color-mix(in srgb, var(--bg) 58%, white 42%);
+    --radius: 20px;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .35);
     --ui-weight: 400;
     --count-weight: 200;
     --count-font: inherit;
@@ -65,15 +68,37 @@
     0%, 100% { background-color: transparent; }
     50% { background-color: rgba(255,107,107,.18); }
   }
+
+  /* ---------- плашки ---------- */
+  .app {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .card button { background: var(--bg3); }
+  .timer-card { gap: 18px; }
+  .time-card { gap: 14px; }
+  .style-card { gap: 16px; }
+
   /* ---------- сцена ---------- */
   .stage {
     position: relative;
-    width: min(64vw, 46vh, 340px);
-    height: min(64vw, 46vh, 340px);
+    width: min(58vw, 42vh, 300px);
+    height: min(58vw, 42vh, 300px);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 8px 0 4px;
     flex: none;
   }
   .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -106,14 +131,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 6px 0 14px;
   }
   .setup input {
     width: 64px;
     text-align: center;
     font-size: 26px;
     font-variant-numeric: tabular-nums;
-    background: var(--bg2);
+    background: var(--bg3);
     border: 1px solid var(--line);
     border-radius: 10px;
     color: var(--fg);
@@ -127,8 +151,6 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
-    max-width: 340px;
-    margin-bottom: 18px;
   }
   .presets button {
     padding: 7px 14px;
@@ -147,7 +169,6 @@
     justify-content: center;
     align-items: flex-start;
     gap: 28px;
-    margin-bottom: 18px;
   }
   .color-picker {
     display: flex;
@@ -182,7 +203,6 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 18px;
   }
   .weights button {
     padding: 6px 14px;
@@ -200,7 +220,6 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 18px;
   }
   .fonts button {
     padding: 6px 14px;
@@ -232,7 +251,6 @@
   .controls {
     display: flex;
     gap: 12px;
-    margin-top: 6px;
   }
   .controls button {
     min-width: 96px;
@@ -286,13 +304,27 @@
   body.fs-only {
     justify-content: center;
   }
-  body.fs-only > *:not(.stage):not(#fullscreenBtn) {
+  body.fs-only > *:not(.app):not(#fullscreenBtn) {
+    display: none;
+  }
+  body.fs-only .app {
+    max-width: none;
+    width: auto;
+  }
+  body.fs-only .app > *:not(.timer-card) {
+    display: none;
+  }
+  body.fs-only .timer-card {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  body.fs-only .timer-card > *:not(.stage) {
     display: none;
   }
   body.fs-only .stage {
     width: min(88vw, 88vh, 640px);
     height: min(88vw, 88vh, 640px);
-    margin: 0;
   }
   body.fs-only .count {
     font-size: clamp(50px, 13vw, 170px);
@@ -302,44 +334,49 @@
 <body>
 <a class="home" href="index.html">← практики</a>
 <button id="fullscreenBtn" title="Полный экран">⛶</button>
-<div class="stage">
-  <svg viewBox="0 0 100 100">
-    <circle class="track" cx="50" cy="50" r="45"></circle>
-    <circle id="progressCircle" class="progress" cx="50" cy="50" r="45"></circle>
-  </svg>
-  <div class="readout">
-    <div class="count" id="count">05:00</div>
+
+<div class="app">
+  <div class="card timer-card">
+    <div class="stage">
+      <svg viewBox="0 0 100 100">
+        <circle class="track" cx="50" cy="50" r="45"></circle>
+        <circle id="progressCircle" class="progress" cx="50" cy="50" r="45"></circle>
+      </svg>
+      <div class="readout">
+        <div class="count" id="count">05:00</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="startBtn">Старт</button>
+      <button id="resetBtn">Сброс</button>
+    </div>
   </div>
-</div>
 
-<div class="setup" id="setup">
-  <input id="hh" inputmode="numeric" maxlength="2" value="00">
-  <span>:</span>
-  <input id="mm" inputmode="numeric" maxlength="2" value="05">
-  <span>:</span>
-  <input id="ss" inputmode="numeric" maxlength="2" value="00">
-</div>
+  <div class="card time-card">
+    <div class="setup" id="setup">
+      <input id="hh" inputmode="numeric" maxlength="2" value="00">
+      <span>:</span>
+      <input id="mm" inputmode="numeric" maxlength="2" value="05">
+      <span>:</span>
+      <input id="ss" inputmode="numeric" maxlength="2" value="00">
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
 
-<div class="presets" id="presets"></div>
-
-<div class="colors">
-  <label class="color-picker">
-    <input type="color" id="accentColorInput" class="circle">
-    <span>интерфейс</span>
-  </label>
-  <label class="color-picker">
-    <input type="color" id="bgColorInput" class="circle">
-    <span>фон</span>
-  </label>
-</div>
-
-<div class="weights" id="weights"></div>
-
-<div class="fonts" id="fonts"></div>
-
-<div class="controls">
-  <button id="startBtn">Старт</button>
-  <button id="resetBtn">Сброс</button>
+  <div class="card style-card">
+    <div class="colors">
+      <label class="color-picker">
+        <input type="color" id="accentColorInput" class="circle">
+        <span>интерфейс</span>
+      </label>
+      <label class="color-picker">
+        <input type="color" id="bgColorInput" class="circle">
+        <span>фон</span>
+      </label>
+    </div>
+    <div class="weights" id="weights"></div>
+    <div class="fonts" id="fonts"></div>
+  </div>
 </div>
 
 <div class="hint">
